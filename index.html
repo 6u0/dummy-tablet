@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>脳髄XR - Operation Panel</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="脳髄XR">
+    <meta name="theme-color" content="#121212">
+    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="manifest" href="manifest.json">
+    <style>
+        :root {
+            --bg-color: #121212;
+            --panel-bg: #1e1e1e;
+            --accent-color: #b00020;
+            --text-main: #e0e0e0;
+            --text-muted: #888;
+            --btn-bg: #333;
+            --success: #03dac6;
+        }
+
+        body {
+            font-family: "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(3px);
+            overscroll-behavior: contain;
+            touch-action: none;
+        }
+
+        .modal-box {
+            background-color: var(--panel-bg);
+            border: 2px solid var(--accent-color);
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            min-width: 300px;
+            max-width: 80%;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.8);
+        }
+
+        .modal-message {
+            font-size: 1.2em;
+            margin-bottom: 25px;
+            font-weight: bold;
+        }
+
+        .modal-consent {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .modal-consent-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1em;
+            color: var(--text-main);
+            cursor: pointer;
+        }
+
+        .modal-consent-label input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: var(--accent-color);
+            flex-shrink: 0;
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .modal-btn {
+            padding: 12px 25px;
+            font-size: 1.1em;
+            flex: 1;
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .modal-btn.cancel {
+            background-color: #444;
+        }
+
+        .modal-btn.confirm {
+            background-color: var(--accent-color);
+        }
+
+        .modal-btn:disabled {
+            cursor: not-allowed;
+        }
+
+        .tab-nav {
+            display: flex;
+            background-color: #000;
+            border-bottom: 2px solid #333;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            font-size: 1.1em;
+            font-weight: bold;
+            color: var(--text-muted);
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        .tab-btn.active {
+            color: var(--text-main);
+            border-bottom: 3px solid var(--accent-color);
+        }
+
+        .container {
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .panel {
+            background-color: var(--panel-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            margin-top: 0;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+            color: var(--text-muted);
+        }
+
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            background-color: #2a2a2a;
+            border: 1px solid #444;
+            color: white;
+            border-radius: 6px;
+            font-size: 1em;
+        }
+
+        .btn-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        button {
+            padding: 15px;
+            font-size: 1.1em;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            background-color: var(--btn-bg);
+            color: var(--text-main);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .lang-btn.active,
+        .mode-btn.active {
+            background-color: var(--success);
+            color: #000;
+        }
+
+        .btn-start {
+            background-color: var(--accent-color);
+            width: 100%;
+            padding: 25px;
+            font-size: 1.5em;
+            margin-top: 10px;
+        }
+
+        .btn-test {
+            background-color: #444;
+            font-size: 0.9em;
+        }
+
+        .status-box {
+            background-color: #000;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 1.8em;
+            font-weight: bold;
+            color: var(--accent-color);
+            border: 2px solid #333;
+        }
+
+        .ws-status {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: red;
+            margin-right: 8px;
+        }
+
+        .ws-status.connected {
+            background-color: var(--success);
+        }
+
+        #log-area {
+            background-color: #000;
+            color: var(--success);
+            padding: 10px;
+            height: 150px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.9em;
+            border-radius: 6px;
+        }
+
+        /* Test Modal */
+        .test-modal-box {
+            min-width: 320px;
+            max-width: 360px;
+        }
+
+        .test-modal-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+
+        .test-modal-address {
+            font-size: 0.8em;
+            color: var(--text-muted);
+            font-family: monospace;
+            margin-bottom: 16px;
+        }
+
+        .test-modal-status {
+            font-size: 1em;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .test-modal-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .test-toggle-btn {
+            padding: 22px;
+            font-size: 1.5em;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.25s, color 0.25s;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            box-shadow: 0 0 12px rgba(3, 218, 198, 0);
+        }
+
+        @keyframes pulse-glow {
+
+            0%,
+            100% {
+                box-shadow: 0 0 12px rgba(3, 218, 198, 0.3);
+            }
+
+            50% {
+                box-shadow: 0 0 28px rgba(3, 218, 198, 0.6);
+            }
+        }
+
+        .test-toggle-btn.on {
+            background-color: var(--success);
+            color: #000;
+            animation: pulse-glow 1.5s ease-in-out infinite;
+        }
+
+        .test-toggle-btn.off {
+            background-color: var(--btn-bg);
+            color: var(--text-main);
+        }
+
+        .test-close-btn {
+            padding: 14px;
+            font-size: 1.1em;
+        }
+
+        .test-close-btn.disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .test-category {
+            font-size: 0.85em;
+            color: var(--accent-color);
+            font-weight: bold;
+            margin-top: 15px;
+            margin-bottom: 8px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid #333;
+        }
+
+        .test-category:first-of-type {
+            margin-top: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="custom-modal" class="modal-overlay">
+        <div class="modal-box">
+            <div id="modal-message" class="modal-message">メッセージ</div>
+            <div id="modal-consent" class="modal-consent" style="display:none;">
+                <label class="modal-consent-label">
+                    <input type="checkbox" id="modal-consent-checkbox">
+                    体験者の同意を確認しました
+                </label>
+            </div>
+            <div id="modal-buttons" class="modal-buttons"></div>
+        </div>
+    </div>
+
+    <div id="test-modal" class="modal-overlay">
+        <div class="modal-box test-modal-box">
+            <div class="test-modal-title" id="test-modal-title">テスト名</div>
+            <div class="test-modal-address" id="test-modal-address">/test/xxx</div>
+            <div class="test-modal-status" id="test-modal-status">停止中</div>
+            <div class="test-modal-buttons">
+                <button id="test-toggle-btn" class="test-toggle-btn off">OFF</button>
+                <button id="test-close-btn" class="modal-btn cancel test-close-btn">閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-nav">
+        <button class="tab-btn active" data-tab="main">Main (通常操作)</button>
+        <button class="tab-btn" data-tab="admin">Admin (設営・テスト)</button>
+    </div>
+
+    <div class="container">
+        <div id="tab-main" class="tab-content active">
+            <div class="panel">
+                <h2>1. 言語 / Language</h2>
+                <div class="btn-grid" style="grid-template-columns: repeat(2, 1fr);">
+                    <button class="lang-btn active" data-lang="JA">Japanese</button>
+                    <button class="lang-btn" data-lang="EN">English</button>
+                </div>
+                <p style="text-align: right; margin-bottom: 0;">現在: <strong id="current-lang"
+                        style="color:var(--success);">Japanese</strong></p>
+            </div>
+
+            <div class="panel">
+                <h2>2. モード / Mode</h2>
+                <div class="btn-grid" style="grid-template-columns: repeat(2, 1fr);">
+                    <button class="mode-btn active" data-mode="NL">Normal</button>
+                    <button class="mode-btn" data-mode="LT">Light</button>
+                </div>
+                <p style="text-align: right; margin-bottom: 0;">現在: <strong id="current-mode"
+                        style="color:var(--success);">Normal</strong></p>
+            </div>
+
+            <div class="panel">
+                <h2>3. 進行状況</h2>
+                <div class="status-box" id="phase-display">Phase: WAIT</div>
+                <button class="btn-start" id="start-button">▶ 体験スタート</button>
+            </div>
+        </div>
+
+        <div id="tab-admin" class="tab-content">
+            <div class="panel">
+                <h2>手動フェーズ移行</h2>
+                <p style="color: var(--accent-color); font-size: 0.8em; margin-top:0;">※進行がスタックした場合など、イレギュラー時のみ使用</p>
+                <div style="display:flex; gap:10px;">
+                    <button id="prev-phase" style="flex:1; background-color:#444;">◀ 強制的に戻す</button>
+                    <button id="next-phase" style="flex:1; background-color:#444;">強制的に進める ▶</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>動作試験</h2>
+                <p style="color: var(--accent-color); font-size: 0.8em; margin-top:0;">※体験者がいない状態で使用すること</p>
+
+                <div class="test-category">ヘッドセット (ESP32 headset)</div>
+                <div class="btn-grid">
+                    <button class="btn-test" data-test-name="ミラー跳ね上げサーボ" data-test-addr="/test/mirror">ミラー跳ね上げ</button>
+                    <button class="btn-test" data-test-name="頭部刺激サーボ (x6)"
+                        data-test-addr="/test/head_stim">頭部刺激サーボ</button>
+                    <button class="btn-test" data-test-name="衝撃ギミック解除サーボ"
+                        data-test-addr="/test/head_unlock">衝撃ギミック解除</button>
+                </div>
+
+                <div class="test-category">部屋 (ESP32 room)</div>
+                <div class="btn-grid" style="grid-template-columns: repeat(2, 1fr);">
+                    <button class="btn-test" data-test-name="椅子（アクチュエータ）"
+                        data-test-addr="/test/chair">椅子アクチュエータ</button>
+                    <button class="btn-test" data-test-name="額縁・各部ロック解除サーボ"
+                        data-test-addr="/test/room_unlock">額縁ロック解除</button>
+                </div>
+
+                <div class="test-category">脳デバイス (ESP32 brain)</div>
+                <div class="btn-grid" style="grid-template-columns: 1fr;">
+                    <button class="btn-test" data-test-name="鼓動フィールドパック（サーボ）"
+                        data-test-addr="/test/vibration">鼓動フィールドパック</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2><span id="ws-indicator" class="ws-status"></span>通信設定</h2>
+                <div class="form-group">
+                    <label>WebSocket URL (中継PCのIP)</label>
+                    <input type="text" id="ws-url" value="">
+                </div>
+                <div class="form-group">
+                    <label>OSC Target IP (Unity PCのIP)</label>
+                    <input type="text" id="osc-ip" value="127.0.0.1">
+                </div>
+                <div class="form-group">
+                    <label>OSC Port</label>
+                    <input type="number" id="osc-port" value="9000">
+                </div>
+                <button id="connect-button" style="width:100%; background-color:var(--success); color:#000;">接続テスト /
+                    更新</button>
+
+                <div style="border-top: 1px solid #333; margin-top: 15px; padding-top: 15px;">
+                    <label>Unityペアリング (双方向通信)</label>
+                    <button id="pair-button"
+                        style="width:100%; background-color:var(--btn-bg); color:var(--text-main);">iPadをUnityにペアリングする</button>
+                    <div id="pair-status"
+                        style="text-align: right; font-size: 0.9em; margin-top: 5px; color: var(--text-muted);">状態:
+                        未ペアリング</div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>システムログ</h2>
+                <div id="log-area"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let panelPingInterval = null;
+        let currentLanguage = "JA";
+        let currentMode = "NL";
+        let autoConfigured = false;
+
+        function log(msg) {
+            const logArea = document.getElementById("log-area");
+            const time = new Date().toLocaleTimeString("ja-JP");
+            logArea.innerHTML += `<div>[${time}] ${msg}</div>`;
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        function showModal(message, type = "alert", onConfirm = null) {
+            const modal = document.getElementById("custom-modal");
+            const msgEl = document.getElementById("modal-message");
+            const btnContainer = document.getElementById("modal-buttons");
+            const consentEl = document.getElementById("modal-consent");
+
+            msgEl.textContent = message;
+            btnContainer.innerHTML = "";
+
+            if (type === "alert") {
+                consentEl.style.display = "none";
+
+                const okBtn = document.createElement("button");
+                okBtn.className = "modal-btn confirm";
+                okBtn.textContent = "OK";
+                okBtn.onclick = () => {
+                    modal.style.display = "none";
+                };
+                btnContainer.appendChild(okBtn);
+            } else {
+                consentEl.style.display = "block";
+                const consentCheckbox = document.getElementById("modal-consent-checkbox");
+                consentCheckbox.checked = false;
+
+                const cancelBtn = document.createElement("button");
+                cancelBtn.className = "modal-btn cancel";
+                cancelBtn.textContent = "戻る";
+                cancelBtn.onclick = () => {
+                    modal.style.display = "none";
+                };
+
+                const confirmBtn = document.createElement("button");
+                confirmBtn.className = "modal-btn confirm";
+                confirmBtn.textContent = "開始";
+                confirmBtn.disabled = true;
+                confirmBtn.style.opacity = "0.5";
+                confirmBtn.onclick = () => {
+                    if (!consentCheckbox.checked) {
+                        return;
+                    }
+                    modal.style.display = "none";
+                    if (onConfirm) {
+                        onConfirm();
+                    }
+                };
+
+                consentCheckbox.onchange = () => {
+                    confirmBtn.disabled = !consentCheckbox.checked;
+                    confirmBtn.style.opacity = consentCheckbox.checked ? "1" : "0.5";
+                };
+
+                btnContainer.appendChild(cancelBtn);
+                btnContainer.appendChild(confirmBtn);
+            }
+
+            modal.style.display = "flex";
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll(".tab-content").forEach((el) => el.classList.remove("active"));
+            document.querySelectorAll(".tab-btn").forEach((el) => el.classList.remove("active"));
+            document.getElementById(`tab-${tabName}`).classList.add("active");
+            document.querySelector(`.tab-btn[data-tab="${tabName}"]`).classList.add("active");
+        }
+
+        function buildAutoWsUrl() {
+            const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+            return `${protocol}//${window.location.host}`;
+        }
+
+        function selectLanguage(lang, btnElement) {
+            currentLanguage = lang;
+            const label = lang === "JA" ? "日本語" : "English";
+            document.getElementById("current-lang").innerText = label;
+            document.querySelectorAll(".lang-btn").forEach((btn) => btn.classList.remove("active"));
+            btnElement.classList.add("active");
+            sendOSC("/system/language", lang);
+            log(`Language selected: ${lang}`);
+        }
+
+        function selectMode(mode, btnElement) {
+            currentMode = mode;
+            const label = mode === "NL" ? "Normal" : "Light";
+            document.getElementById("current-mode").innerText = label;
+            document.querySelectorAll(".mode-btn").forEach((btn) => btn.classList.remove("active"));
+            btnElement.classList.add("active");
+            sendOSC("/system/mode", mode);
+            log(`Mode selected: ${mode}`);
+        }
+
+        function startGame() {
+            showModal("プログラムを開始しますか？", "confirm", () => {
+                sendOSC("/phase/start", 1);
+                document.getElementById("phase-display").innerText = "Phase: 1";
+                log("GAME STARTED");
+            });
+        }
+
+        function connectWebSocket(forceUrl = null) {
+            const url = forceUrl || document.getElementById("ws-url").value;
+            document.getElementById("ws-url").value = url;
+            log(`Connecting to WebSocket: ${url}`);
+
+            if (ws) {
+                ws.close();
+            }
+
+            try {
+                ws = new WebSocket(url);
+                ws.onopen = () => {
+                    document.getElementById("ws-indicator").classList.add("connected");
+                    log("WebSocket connected.");
+                    sendOSC("/phase/query", 1);
+                    startPanelPing();
+                };
+                ws.onclose = () => {
+                    document.getElementById("ws-indicator").classList.remove("connected");
+                    stopPanelPing();
+                    log("WebSocket disconnected.");
+                };
+                ws.onerror = () => {
+                    log("WebSocket error.");
+                };
+                ws.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    if (data.address === "/phase/current") {
+                        const phaseValue = data.value ?? (data.args && data.args.length > 0 ? data.args[0] : "UNKNOWN");
+                        document.getElementById("phase-display").innerText = `Phase: ${phaseValue}`;
+                        log(`Phase updated: ${phaseValue}`);
+                    } else if (data.address === "/panel/auto_config") {
+                        applyAutoConfiguration(data.args || []);
+                    } else if (data.address === "/panel/unity_status") {
+                        reflectUnityStatus(data.args || []);
+                    } else if (data.address === "/system/language_current") {
+                        const lang = data.value ?? (data.args && data.args.length > 0 ? data.args[0] : null);
+                        if (lang) {
+                            reflectLanguage(lang);
+                        }
+                    } else if (data.address === "/system/mode_current") {
+                        const mode = data.value ?? (data.args && data.args.length > 0 ? data.args[0] : null);
+                        if (mode) {
+                            reflectMode(mode);
+                        }
+                    }
+                };
+            } catch (error) {
+                log(`WebSocket init failed: ${error.message}`);
+            }
+        }
+
+        function startPanelPing() {
+            stopPanelPing();
+            panelPingInterval = setInterval(() => {
+                sendOSC("/panel/ping", 1);
+            }, 2000);
+        }
+
+        function stopPanelPing() {
+            if (panelPingInterval) {
+                clearInterval(panelPingInterval);
+                panelPingInterval = null;
+            }
+        }
+
+        function sendOSC(address, value = null) {
+            const ip = document.getElementById("osc-ip").value;
+            const port = parseInt(document.getElementById("osc-port").value, 10);
+            const message = {
+                ip,
+                port,
+                address,
+                args: value !== null ? [{ type: typeof value === "number" ? "i" : "s", value }] : []
+            };
+
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify(message));
+                log(`Sent OSC: ${address} [${value}] -> ${ip}:${port}`);
+            } else {
+                log(`WebSocket offline: ${address}`);
+            }
+        }
+
+        function applyAutoConfiguration(args) {
+            if (args.length < 2) {
+                return;
+            }
+
+            const [ip, port] = args;
+            document.getElementById("osc-ip").value = ip || "127.0.0.1";
+            document.getElementById("osc-port").value = Number(port || 9000);
+
+            if (!autoConfigured) {
+                autoConfigured = true;
+                log(`Auto OSC config applied: ${ip}:${port}`);
+            } else {
+                log(`OSC config refreshed: ${ip}:${port}`);
+            }
+        }
+
+        function reflectUnityStatus(args) {
+            const unityOnline = Number(args[0] || 0) === 1;
+            const panelLinked = Number(args[1] || 0) === 1;
+            const isPaired = Number(args[2] || 0) === 1;
+
+            if (!unityOnline) {
+                log("Unity status: offline");
+                return;
+            }
+
+            log(panelLinked ? "Unity status: connected" : "Unity status: waiting");
+
+            const pairStatusEl = document.getElementById("pair-status");
+            const pairBtn = document.getElementById("pair-button");
+            if (pairStatusEl && pairBtn) {
+                if (isPaired) {
+                    pairStatusEl.innerText = "状態: ペアリング完了";
+                    pairStatusEl.style.color = "var(--success)";
+                    pairBtn.style.backgroundColor = "var(--success)";
+                    pairBtn.style.color = "#000";
+                    pairBtn.innerText = "ペアリング済み";
+                } else {
+                    pairStatusEl.innerText = "状態: 未ペアリング";
+                    pairStatusEl.style.color = "var(--text-muted)";
+                    pairBtn.style.backgroundColor = "var(--btn-bg)";
+                    pairBtn.style.color = "var(--text-main)";
+                    pairBtn.innerText = "iPadをUnityにペアリングする";
+                }
+            }
+        }
+
+        // ─── 動作試験モーダル ───
+        const TEST_PORT = 10000;
+        let currentTestAddress = "";
+        let testIsOn = false;
+
+        function sendTestOSC(address, value) {
+            const ip = document.getElementById("osc-ip").value;
+            const message = {
+                ip,
+                port: TEST_PORT,
+                address,
+                args: [{ type: "i", value }]
+            };
+
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify(message));
+                log(`Test OSC: ${address} [${value}] -> ${ip}:${TEST_PORT}`);
+            } else {
+                log(`WebSocket offline: ${address}`);
+            }
+        }
+
+        function openTestModal(name, address) {
+            currentTestAddress = address;
+            testIsOn = false;
+            document.getElementById("test-modal-title").textContent = name;
+            document.getElementById("test-modal-address").textContent = address;
+            updateTestModalState();
+            document.getElementById("test-modal").style.display = "flex";
+        }
+
+        function toggleTest() {
+            testIsOn = !testIsOn;
+            sendTestOSC(currentTestAddress, testIsOn ? 1 : 0);
+            updateTestModalState();
+        }
+
+        function updateTestModalState() {
+            const toggleBtn = document.getElementById("test-toggle-btn");
+            const closeBtn = document.getElementById("test-close-btn");
+            const statusEl = document.getElementById("test-modal-status");
+
+            if (testIsOn) {
+                toggleBtn.textContent = "ON";
+                toggleBtn.className = "test-toggle-btn on";
+                statusEl.textContent = "動作中";
+                statusEl.style.color = "var(--success)";
+                closeBtn.classList.add("disabled");
+            } else {
+                toggleBtn.textContent = "OFF";
+                toggleBtn.className = "test-toggle-btn off";
+                statusEl.textContent = "停止中";
+                statusEl.style.color = "var(--text-muted)";
+                closeBtn.classList.remove("disabled");
+            }
+        }
+
+        function closeTestModal() {
+            if (testIsOn) return;
+            document.getElementById("test-modal").style.display = "none";
+        }
+
+        // ─── イベントリスナー ───
+        document.querySelectorAll(".tab-btn").forEach((btn) => {
+            btn.addEventListener("click", () => switchTab(btn.dataset.tab));
+        });
+
+        document.querySelectorAll(".lang-btn").forEach((btn) => {
+            btn.addEventListener("click", () => selectLanguage(btn.dataset.lang, btn));
+        });
+
+        document.querySelectorAll(".mode-btn").forEach((btn) => {
+            btn.addEventListener("click", () => selectMode(btn.dataset.mode, btn));
+        });
+
+        document.getElementById("start-button").addEventListener("click", startGame);
+        document.getElementById("prev-phase").addEventListener("click", () => sendOSC("/phase/prev"));
+        document.getElementById("next-phase").addEventListener("click", () => sendOSC("/phase/next"));
+        document.getElementById("connect-button").addEventListener("click", () => connectWebSocket());
+
+        document.getElementById("pair-button").addEventListener("click", () => {
+            sendOSC("/panel/pair", 1);
+            document.getElementById("pair-status").innerText = "状態: ペアリング要求送信済み (Unityの応答待ち...)";
+            document.getElementById("pair-status").style.color = "var(--success)";
+        });
+
+        document.getElementById("test-toggle-btn").addEventListener("click", toggleTest);
+        document.getElementById("test-close-btn").addEventListener("click", closeTestModal);
+
+        document.querySelectorAll(".btn-test[data-test-addr]").forEach((btn) => {
+            btn.addEventListener("click", () => openTestModal(btn.dataset.testName, btn.dataset.testAddr));
+        });
+
+        function reflectLanguage(lang) {
+            currentLanguage = lang;
+            const label = lang === "JA" ? "日本語" : "English";
+            document.getElementById("current-lang").innerText = label;
+            document.querySelectorAll(".lang-btn").forEach((btn) => {
+                btn.classList.toggle("active", btn.dataset.lang === lang);
+            });
+            log(`Language synced: ${lang}`);
+        }
+
+        function reflectMode(mode) {
+            currentMode = mode;
+            const label = mode === "NL" ? "Normal" : "Light";
+            document.getElementById("current-mode").innerText = label;
+            document.querySelectorAll(".mode-btn").forEach((btn) => {
+                btn.classList.toggle("active", btn.dataset.mode === mode);
+            });
+            log(`Mode synced: ${mode}`);
+        }
+
+        window.onload = () => {
+            log("System Boot sequence initiated...");
+            connectWebSocket(buildAutoWsUrl());
+        };
+    </script>
+</body>
+
+</html>
